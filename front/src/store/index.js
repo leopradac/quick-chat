@@ -1,7 +1,8 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import createPersistedState from "vuex-persistedstate"
 
-// import example from './module-example'
+import chat from './chat'
 
 Vue.use(Vuex)
 
@@ -17,9 +18,9 @@ Vue.use(Vuex)
 export default function (/* { ssrContext } */) {
   const Store = new Vuex.Store({
     modules: {
-      // example
+      chat
     },
-
+    plugins: [createPersistedState()],
     // enable strict mode (adds overhead!)
     // for dev mode only
     strict: process.env.DEBUGGING

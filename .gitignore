@@ -3,6 +3,8 @@ venv
 .DS_Store
 .thumbs.db
 node_modules
+static
+templates/chat.html
 
 # Quasar core related directories
 .quasar

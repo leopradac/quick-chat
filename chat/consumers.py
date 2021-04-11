@@ -1,7 +1,17 @@
 import json
 import re
+import uuid
+
+import requests
+import pandas as pd
 
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+
+def csv_to_dict(csv_url):
+    print(csv_url)
+    df = pd.read_csv(csv_url)
+    return df.to_dict(orient='records')
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -50,16 +60,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
         print('** consumers.commands', text)
         supported_commands = ['stock']
         command_pattern = re.match(".*/([A-z]*)=.*", text)
-        valid_command = re.match("^/([a-z]*)=([A-z]*)$", text)
+        valid_command = re.match("^/([a-z]+)=(([A-z]|\.)+)$", text)
+        print('valid_command', valid_command)
         if valid_command:
-            command, value = valid_command.groups()
+            command, value = valid_command.groups()[:2]
+            print(command, value)
             if command in supported_commands:
+                url = f'https://stooq.com/q/l/?s={value}&f=sd2t2ohlcv&h&e=csv'
+                parsed_data = csv_to_dict(url)
+                print(parsed_data)
+                data = parsed_data[0]
+                data = f"{data['Symbol']} is {data['Close']}"
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
                         "type": "chat_message",
-                        "name": name,
-                        "text": f"Command sent: {command}",
+                        "name": 'BOT',
+                        "text": data,
                         "createdAt": createdAt
                     },
                 )
@@ -69,7 +86,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     {
                         "type": "chat_message",
                         "name": name,
-                        "text": f"Unsupported command: {command}"
+                        "text": f"Unsupported command: {command}",
+                        "createdAt": createdAt
                     },
                 )
 
@@ -80,7 +98,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     "type": "chat_message",
                     "name": name,
-                    "text": f"Wrong Formatted '{command}' command."
+                    "text": f"Wrong Formatted '{command}' command.",
+                    "createdAt": createdAt
                 },
             )
         else:

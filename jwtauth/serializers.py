@@ -16,7 +16,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             "username",
-            "email",
+            "is_superuser",
             "password",
             "password2",
         ]
@@ -24,16 +24,17 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         username = validated_data["username"]
-        email = validated_data["email"]
+        # email = validated_data["email"]
         password = validated_data["password"]
         password2 = validated_data["password2"]
-        if email and User.objects.filter(email=email).exclude(username=username).exists():
-            raise serializers.ValidationError(
-                {"email": "Email addresses must be unique."})
+        # if email and User.objects.filter(email=email).exclude(username=username).exists():
+        #     raise serializers.ValidationError(
+        #         {"email": "Email addresses must be unique."})
         if password != password2:
             raise serializers.ValidationError(
                 {"password": "The two passwords differ."})
-        user = User(username=username, email=email)
+        # user = User(username=username, email=email)
+        user = User(username=username)
         user.set_password(password)
         user.save()
         return user
