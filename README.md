@@ -9,7 +9,7 @@ pip3 install -r requirements.txt
 python3 manage.py makemigrations
 python3 manage.py migrate
 
-~~python manage.py collectstatic~~
+python manage.py collectstatic
 
 run server:
 daphne -b localhost -p 9000 quick_chat.asgi:application
