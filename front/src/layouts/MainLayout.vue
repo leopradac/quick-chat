@@ -12,12 +12,12 @@
           />
 
           <q-btn round flat>
-            <q-avatar color="primary" text-color="white">
+            <q-avatar v-if="currentConversation" color="primary" text-color="white">
               {{ currentConversation.roomName[0] }}
             </q-avatar>
           </q-btn>
 
-          <span class="q-subtitle-1 q-pl-md">
+          <span v-if="currentConversation" class="q-subtitle-1 q-pl-md">
             {{ currentConversation.roomName }}
           </span>
 
@@ -31,22 +31,10 @@
             <q-menu auto-close :offset="[110, 0]">
               <q-list style="min-width: 150px">
                 <q-item clickable>
-                  <q-item-section>Contact data</q-item-section>
+                  <q-item-section @click="$store.commit('chat/cleanChat', activeRoomCode)">Erase messages</q-item-section>
                 </q-item>
                 <q-item clickable>
-                  <q-item-section>Block</q-item-section>
-                </q-item>
-                <q-item clickable>
-                  <q-item-section>Select messages</q-item-section>
-                </q-item>
-                <q-item clickable>
-                  <q-item-section>Silence</q-item-section>
-                </q-item>
-                <q-item clickable>
-                  <q-item-section>Clear messages</q-item-section>
-                </q-item>
-                <q-item clickable>
-                  <q-item-section>Erase messages</q-item-section>
+                  <q-item-section @click="closeChat">Close chat</q-item-section>
                 </q-item>
               </q-list>
             </q-menu>
@@ -64,7 +52,9 @@
           <q-avatar class="cursor-pointer">
             <img src="https://cdn.quasar.dev/app-icons/icon-128x128.png" />
           </q-avatar>
-
+          <span class="text-bold q-px-xs">
+            {{username || 'None'}}
+          </span>
           <q-space />
 
           <q-btn round flat icon="message" />
@@ -87,7 +77,7 @@
                   <q-item-section>Settings</q-item-section>
                 </q-item>
                 <q-item clickable>
-                  <q-item-section>Logout</q-item-section>
+                  <q-item-section @click="logout">Logout</q-item-section>
                 </q-item>
               </q-list>
             </q-menu>
@@ -171,11 +161,11 @@
 </template>
 
 <script>
+import { cleanChat } from 'src/store/chat/mutations'
 export default {
   name: 'WhatsappLayout',
   data () {
     return {
-      username: 'realLeo',
       leftDrawerOpen: false,
       search: '',
       message: '',
@@ -186,18 +176,35 @@ export default {
     }
   },
   methods: {
+    closeChat () {
+      const socket = this.sockets[this.activeRoomCode]
+      if (socket) { socket.close()}
+      this.$store.commit('chat/removeChat', this.activeRoomCode)
+    },
+    logout () {
+      for (const key in this.sockets) {
+        const socket = this.sockets[key]
+        console.log('socket.readyState :', socket.readyState)
+        if (socket.readyState === 1) {
+          socket.close()
+        }
+      }
+      this.$store.commit('auth/signOut')
+      this.$store.commit('chat/cleanAll', this.activeRoomCode)
+      this.$router.push({name: 'auth'})
+    },
     scrollAllDown() {
       console.log('EMITED scrollAllDown', this.$refs.scrollArea)
       this.$refs.scrollArea.setScrollPercentage('1')
     },
     sendMessage(message) {
+      console.log('sendingmesage')
       const CHAT_SOCKET = this.sockets[this.activeRoomCode]
       CHAT_SOCKET.send(JSON.stringify({
         name: this.username,
         text: message,
         createdAt: Date.now()
       }))
-      // Limpiamos el campo donde hemos escrito
       this.message = ''
     },
     activeConversation (index) {
@@ -206,16 +213,20 @@ export default {
       this.activeRoomCode = this.conversations[index].roomCode
     },
     initSocket(roomCode) {
+      // debugger
+      if (this.sockets.hasOwnProperty(roomCode)) {
+        if ([0, 1].includes(this.sockets[roomCode].readyState)) {
+          return
+        }
+      }
+      console.log('iniciando websocket')
       const ROOM_SOCKET = new WebSocket('ws://localhost:9000/ws/chat/' + roomCode + '/');
-        // Conectado
         ROOM_SOCKET.addEventListener('open', () => {
-            console.log('Conectado');
+            console.log('Connected');
         });
-        // Desconectado
         ROOM_SOCKET.addEventListener('close', () => {
-            console.log('Desconectado');
+            console.log('Disconnected');
         });
-        // Recibir mensaje
         ROOM_SOCKET.addEventListener('message', (event) => {
             this.addMessage(event, roomCode)
         })
@@ -230,12 +241,8 @@ export default {
       if (index === -1) {
         this.initSocket(roomCode)
         const conv = {
-            // id: 1,
-            // ROOM_SOCKET: ROOM_SOCKET,
             roomName: roomName,
-            roomCode: roomCode,
-            // time: '15:00',
-            sent: true
+            roomCode: roomCode
         }
         
         // this.conversations.push(conv)
@@ -248,22 +255,24 @@ export default {
       this.search = ''
     },
     addMessage(event, roomCode) {
-      console.log('Recibido nuevo mensaje');
-          const newMessage = JSON.parse(event.data);
-          const payload = {
-            roomCode: roomCode,
-            name: newMessage.name,
-            message: newMessage.text,
-            date: newMessage.createdAt,
-            sent: newMessage.name === this.username
-          }
-          this.$store.commit('chat/newMessage', payload)
+      const newMessage = JSON.parse(event.data);
+      console.log('New Message Received');
+      const payload = {
+        roomCode: roomCode,
+        name: newMessage.name,
+        message: newMessage.text,
+        date: newMessage.createdAt
+      }
+      this.$store.commit('chat/newMessage', payload)
     }
   },
   computed: {
     // currentConversation () {
     //   return this.conversations.find(x => x.roomCode = this.activeRoomCode) || { roomName: '' }
     // },
+    username() {
+      return this.$store.getters['auth/username'] 
+    },
     conversations: {
       get () {
         return this.$store.state.chat.conversations
@@ -284,9 +293,9 @@ export default {
     }
   },
   beforeMount () {
-    this.addChannel('General Room')
   },
   mounted () {
+    this.addChannel('General Room')
     this.currentConversation = this.conversations.find(x => x.roomCode === this.activeRoomCode)
     for (const item of this.conversations) {
       this.initSocket(item.roomCode)

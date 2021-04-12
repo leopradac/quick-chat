@@ -1,8 +1,6 @@
 import json
 import re
-import uuid
 
-import requests
 import pandas as pd
 
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -85,7 +83,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.room_group_name,
                     {
                         "type": "chat_message",
-                        "name": name,
+                        "name": 'BOT',
                         "text": f"Unsupported command: {command}",
                         "createdAt": createdAt
                     },
@@ -97,7 +95,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.room_group_name,
                 {
                     "type": "chat_message",
-                    "name": name,
+                    "name": 'BOT',
                     "text": f"Wrong Formatted '{command}' command.",
                     "createdAt": createdAt
                 },

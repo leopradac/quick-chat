@@ -3,6 +3,7 @@ import Vuex from 'vuex'
 import createPersistedState from "vuex-persistedstate"
 
 import chat from './chat'
+import auth from './auth'
 
 Vue.use(Vuex)
 
@@ -18,7 +19,8 @@ Vue.use(Vuex)
 export default function (/* { ssrContext } */) {
   const Store = new Vuex.Store({
     modules: {
-      chat
+      chat,
+      auth
     },
     plugins: [createPersistedState()],
     // enable strict mode (adds overhead!)

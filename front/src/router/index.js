@@ -14,7 +14,7 @@ Vue.use(VueRouter)
  * with the Router instance.
  */
 
-export default function (/* { store, ssrContext } */) {
+export default function ({ store }/*, ssrContext */) {
   const Router = new VueRouter({
     scrollBehavior: () => ({ x: 0, y: 0 }),
     routes,
@@ -26,5 +26,19 @@ export default function (/* { store, ssrContext } */) {
     base: process.env.VUE_ROUTER_BASE
   })
 
+  Router.beforeEach((to, from, next) => {
+    console.log('router', to.path)
+    const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+    const isLogged = store.state.auth.user
+    const nextPage = to.name
+    if (nextPage === 'auth' && isLogged) {
+      next({ name: 'chat' })
+    }
+    if (nextPage === 'chat' && !isLogged) {
+      next({ name: 'auth' })
+    }
+    next()
+    
+  })
   return Router
 }

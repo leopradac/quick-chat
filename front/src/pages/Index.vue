@@ -7,7 +7,7 @@
           v-for="(msg, index) in messages" :key="index"
           :name="msg.name"
           :text="[msg.message]"
-          :sent="msg.sent"
+          :sent="msg.name === username"
           :stamp="msg.date | timeAgo"
           :bg-color="msg.name == 'BOT' ? 'blue' : ''"
 
@@ -23,10 +23,16 @@ export default {
   name: 'PageIndex',
   data() {
     return {
-      messages: []
+      // messages: []
     }
   },
   computed: {
+    messages() {
+      return this.$store.getters['chat/getConversation'](this.activeRoomCode) || []
+    },
+    username() {
+      return this.$store.getters['auth/username'] 
+    },
     activeRoomCode: {
       get () {
         return this.$store.state.chat.activeRoomCode
@@ -42,17 +48,17 @@ export default {
     }
   },
   watch: {
-    activeRoomCode: {
-      immediate: true,
-      deep: true,
-      handler(newValue, oldValue) {
-        console.log('newValue :', newValue)
-        this.messages = this.$store.getters['chat/getConversation'](newValue)
-        this.$nextTick(() => {
-          this.$emit('scrollAllDown')
-        })
-      }
-    }
+    // activeRoomCode: {
+    //   immediate: true,
+    //   deep: true,
+    //   handler(newValue, oldValue) {
+    //     console.log('newValue :', newValue)
+    //     this.messages = this.$store.getters['chat/getConversation'](newValue)
+    //     this.$nextTick(() => {
+    //       this.$emit('scrollAllDown')
+    //     })
+    //   }
+    // }
   },
 }
 </script>

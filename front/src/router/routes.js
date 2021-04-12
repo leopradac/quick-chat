@@ -1,11 +1,18 @@
 
 const routes = [
   {
+    path: '/auth',
+    component: () => import('layouts/cleanLayout.vue'),
+    children: [
+      { path: '', name: 'auth', meta: { requiresUnlogged: true }, component: () => import('pages/auth.vue') }
+    ]
+  },
+  {
+    meta: { requiresAuth: true },
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/Index.vue') },
-      { path: 'chat', component: () => import('pages/chat.vue') }
+      { path: '', name: 'chat', component: () => import('pages/Index.vue') }
     ]
   },
 
